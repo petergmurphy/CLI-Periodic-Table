@@ -5,7 +5,10 @@ go 1.18
 require (
 	github.com/charmbracelet/bubbletea v0.20.0
 	github.com/charmbracelet/lipgloss v0.5.0
+	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75
 )
+
+require github.com/atotto/clipboard v0.1.4 // indirect
 
 require (
 	github.com/charmbracelet/bubbles v0.10.3

@@ -1,9 +1,49 @@
-package table
+package grid
 
 import (
-	"periodic-table/ui/element"
+	"github.com/charmbracelet/lipgloss"
 	"testing"
 )
+
+type mockCell struct {
+	SelectedStyle   lipgloss.Style
+	UnSelectedStyle lipgloss.Style
+	SearchString    string
+	IsSelected      bool
+	IsPaddingCell   bool
+	View            string
+}
+
+func (c *mockCell) GetSearchString() string {
+	return c.searchString
+}
+
+func (c *mockCell) GetData() interface{} {
+	return "no data"
+}
+
+func (c *mockCell) GetView() string {
+	return c.View
+}
+
+func (c *mockCell) GetUnselectedStyle() lipgloss.Style {
+	return c.unSelectedStyle
+}
+
+func (c *mockCell) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
+	c.selectedStyle = selectedStyle
+	c.unSelectedStyle = unSelectedStyle
+}
+
+func (c *mockCell) SetSelected(isSelected bool) {
+	c.isSelected = isSelected
+}
+
+func styleText(atomicNumber string, symbol string) string {
+	text := lipgloss.Place(width, height, 1, 1, symbol)
+	text = lipgloss.JoinVertical(0, lipgloss.Place(0, 0, 0, 0, atomicNumber), text)
+	return text
+}
 
 func TestModel_SetGrid(t *testing.T) {
 	type args struct {
@@ -85,7 +125,7 @@ func TestModel_SetGrid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var elements []element.Model
+			var cells []mockCell
 			for i := 0; i < tt.args.numberOfElements; i++ {
 				elements = append(elements, element.Model{})
 			}
