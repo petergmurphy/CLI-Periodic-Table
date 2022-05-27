@@ -28,12 +28,6 @@ var (
 	}
 )
 
-func styleText(atomicNumber string, symbol string) string {
-	text := lipgloss.Place(width, height, 1, 1, symbol)
-	text = lipgloss.JoinVertical(0, lipgloss.Place(0, 0, 0, 0, atomicNumber), text)
-	return text
-}
-
 func getView(atomicNumber string, symbol string, isSelected bool, elementType string) string {
 	if symbol == "" {
 		return empty.Render("")
@@ -45,7 +39,6 @@ func getView(atomicNumber string, symbol string, isSelected bool, elementType st
 	} else {
 		style = style.UnsetBackground()
 	}
-	style = style.BorderForeground(TypeColors[elementType])
 
 	return style.Render(text)
 }

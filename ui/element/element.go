@@ -1,7 +1,8 @@
 package element
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"periodic-table/ui/table"
 )
 
 type Data struct {
@@ -35,19 +36,72 @@ type Data struct {
 	NumberOfValence   string
 }
 
-type Model struct {
-	Data       Data
-	IsSelected bool
+type Cell struct {
+	data            Data
+	selectedStyle   lipgloss.Style
+	unSelectedStyle lipgloss.Style
+	searchString    string
+	isSelected      bool
+	isPaddingCell   bool
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
+func (c *Cell) GetSearchString() string {
+	return c.searchString
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m, nil
+func (c *Cell) GetData() interface{} {
+	return c.data
 }
 
-func (m Model) View() string {
-	return getView(m.Data.AtomicNumber, m.Data.Symbol, m.IsSelected, m.Data.Type)
+func (c *Cell) GetView() string {
+	var text string
+	// Make cell text here
+	text = styleText(c.data.AtomicNumber, c.data.Symbol)
+	// Put formatting/styling here
+	if c.isSelected {
+		text = c.selectedStyle.Render(text)
+	} else {
+		text = c.unSelectedStyle.Render(text)
+	}
+
+	return text
+}
+
+func (c *Cell) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
+	c.selectedStyle = selectedStyle
+	c.unSelectedStyle = unSelectedStyle
+}
+
+func (c *Cell) SetSelected(isSelected bool) {
+	c.isSelected = isSelected
+}
+
+func styleText(atomicNumber string, symbol string) string {
+	text := lipgloss.Place(width, height, 1, 1, symbol)
+	text = lipgloss.JoinVertical(0, lipgloss.Place(0, 0, 0, 0, atomicNumber), text)
+	return text
+}
+
+func (c *Cell) IsPaddingCell() bool {
+	return c.isPaddingCell
+}
+
+func CreateElement(data Data, isPaddingCell bool) table.Cell {
+	unSelectedStyle := style.Copy().BorderForeground(TypeColors[data.Type])
+	selectedStyle := unSelectedStyle.Copy().Background(TypeColors[data.Type])
+
+	cell := &Cell{
+		data:            data,
+		selectedStyle:   selectedStyle,
+		unSelectedStyle: unSelectedStyle,
+		searchString:    data.Element,
+		isSelected:      false,
+		isPaddingCell:   isPaddingCell,
+	}
+
+	if isPaddingCell {
+		cell.unSelectedStyle = empty
+	}
+
+	return cell
 }

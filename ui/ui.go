@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"periodic-table/src/elements"
 	"periodic-table/ui/element"
 	"periodic-table/ui/table"
 
@@ -48,7 +49,7 @@ Atomic mass: %s
 Group: %s
 `, elem.Type, elem.AtomicNumber, elem.AtomicMass, elem.Group)
 
-    heading := lipgloss.Place(10, 5, 0.5, 1, elem.Symbol)
+	heading := lipgloss.Place(10, 5, 0.5, 1, elem.Symbol)
 	heading = lipgloss.JoinVertical(0, heading, lipgloss.Place(10, 5, 0.5, 0, elem.Element))
 	text = lipgloss.Place(10, 10, 0.5, 0.5, text)
 	text = lipgloss.JoinVertical(0, heading, text)
@@ -58,13 +59,19 @@ Group: %s
 
 func (m Model) View() string {
 	text := m.table.View()
-	elementText := elementInfoView(m.table.GetSelectedElement().Data)
-	text = lipgloss.JoinHorizontal(0, text, elementText)
+
+	switch elementData := (*m.table.GetSelectedElement()).GetData().(type) {
+	case element.Data:
+		elementText := elementInfoView(elementData)
+		text = lipgloss.JoinHorizontal(0, text, elementText)
+	}
 
 	return text
 }
 
 func CreateModel() (tea.Model, error) {
-	table, err := table.CreateModel()
+	elements := elements.ReadElements()
+
+	table, err := table.CreateModel(elements, table.GridSettings{Rows: 10, Columns: 18})
 	return Model{table: table}, err
 }
