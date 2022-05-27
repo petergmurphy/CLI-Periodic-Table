@@ -19,12 +19,44 @@ type GridSettings struct {
 	Columns int
 }
 
+type MergeCellOptions struct {
+	leftMostRow, leftMostCol int // use index starts at 0
+	height, width            int
+	NewMergedCell            Cell
+}
+
 type Model struct {
 	cells                []Cell
 	grid                 [][]*Cell
 	selectedX, selectedY int
 	viewport             viewport.Model
 	help                 help.Model
+	history              Stack
+}
+
+func (m *Model) MergeCells(options MergeCellOptions) error {
+	var totalHeight, totalWidth int
+	for i := options.leftMostCol; i < options.width; i++ {
+		for j := options.leftMostRow; j < options.height; i++ {
+			cell := m.grid[i][j]
+			totalHeight += (*cell).GetUnselectedStyle().GetHeight()
+			totalWidth += (*cell).GetUnselectedStyle().GetWidth()
+			(*cell).SetStyle(lipgloss.NewStyle().Width(0).Height(0), lipgloss.NewStyle().Width(0).Height(0))
+		}
+	}
+
+	return nil
+}
+
+func (m *Model) overWriteCell(row, col int, cell Cell) error {
+	index := row * col
+	if index > len(m.cells) {
+		return fmt.Errorf("cannot overwrite cell, out of grid index")
+	}
+
+	m.cells[index] = cell
+
+	return nil
 }
 
 func (m *Model) SelectCell(move string) {

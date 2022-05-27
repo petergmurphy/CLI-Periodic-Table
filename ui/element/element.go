@@ -67,6 +67,10 @@ func (c *Cell) GetView() string {
 	return text
 }
 
+func (c *Cell) GetUnselectedStyle() lipgloss.Style {
+	return c.unSelectedStyle
+}
+
 func (c *Cell) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
 	c.selectedStyle = selectedStyle
 	c.unSelectedStyle = unSelectedStyle
