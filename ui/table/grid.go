@@ -97,16 +97,20 @@ func (m *Model) SetGrid(settings GridSettings) error {
 		return err
 	}
 
-	m.grid = fillGrid(&m.cells, settings)
+	m.grid = fillGrid(m.cells, settings)
 
 	return nil
 }
 
-func fillGrid(elements *[]Cell, settings GridSettings) (grid [][]*Cell) {
+func fillGrid(elements []Cell, settings GridSettings) (grid [][]*Cell) {
 	for i := 0; i < settings.Rows; i++ {
+		if i == 0 {
+			elements[0].SetSelected(true)
+		}
+
 		var row []*Cell
 		for j := 0; j < settings.Columns; j++ {
-			row = append(row, &(*elements)[i*settings.Columns+j])
+			row = append(row, &elements[i*settings.Columns+j])
 		}
 		grid = append(grid, row)
 	}

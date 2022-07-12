@@ -1,8 +1,10 @@
 package element
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"fmt"
 	"periodic-table/ui/table"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 type Data struct {
@@ -34,6 +36,24 @@ type Data struct {
 	SpecificHeat      string
 	NumberOfShells    string
 	NumberOfValence   string
+}
+
+func (d *Data) GetDataAsString() string {
+	text := fmt.Sprintf(`Type: %s
+Atomic number: %s
+Atomic mass: %s
+Electrons: %s
+Protons: %s
+Neutrons: %s
+Group: %s
+Density: %s
+Atomic Radius: %s
+Melting Point: %s
+Specific Heat: %s
+	`, d.Type, d.AtomicNumber, d.AtomicMass, d.NumberOfElectrons, d.NumberOfProtons, d.NumberOfNeutrons, d.Group, d.Density, d.AtomicRadius, d.MeltingPoint, d.SpecificHeat)
+
+	return text
+
 }
 
 type Cell struct {

@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"periodic-table/src/elements"
 	"periodic-table/ui/element"
 	"periodic-table/ui/table"
@@ -43,17 +42,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func elementInfoView(elem element.Data) string {
-	text := fmt.Sprintf(`Type: %s
-Atomic number: %s
-Atomic mass: %s
-Group: %s
-`, elem.Type, elem.AtomicNumber, elem.AtomicMass, elem.Group)
+	heading := lipgloss.Place(10, 5, 1, 1, elem.Symbol)
+	heading = lipgloss.JoinVertical(0, heading, lipgloss.Place(20, 5, 0.5, 0, elem.Element))
 
-	heading := lipgloss.Place(10, 5, 0.5, 1, elem.Symbol)
-	heading = lipgloss.JoinVertical(0, heading, lipgloss.Place(10, 5, 0.5, 0, elem.Element))
-	text = lipgloss.Place(10, 10, 0.5, 0.5, text)
-	text = lipgloss.JoinVertical(0, heading, text)
+	body := elem.GetDataAsString()
+	body = lipgloss.Place(10, 10, 0, 0, body)
+
+	text := lipgloss.JoinVertical(0, heading, body)
 	style = style.BorderForeground(element.TypeColors[elem.Type])
+
 	return style.Render(text)
 }
 
