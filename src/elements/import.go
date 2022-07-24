@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"periodic-table/ui/element"
-	"periodic-table/ui/table"
+	"periodic-table/ui/grid"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 	}
 )
 
-func ReadElements() []table.Cell {
+func ReadElements() []grid.Cell {
 	// open file
 	f, err := os.Open("data/elements.csv")
 	if err != nil {
@@ -44,10 +44,10 @@ func ReadElements() []table.Cell {
 	return createElements(data)
 }
 
-func createElements(data [][]string) []table.Cell {
-	var elements []table.Cell
+func createElements(data [][]string) []grid.Cell {
+	var elements []grid.Cell
 	var count int
-	var lastGroups []table.Cell
+	var lastGroups []grid.Cell
 	for i, line := range data {
 		if skipLines := emptyEntryRange[count]; skipLines != 0 {
 			for j := count; j < skipLines; j++ {

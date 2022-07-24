@@ -3,7 +3,7 @@ package ui
 import (
 	"periodic-table/src/elements"
 	"periodic-table/ui/element"
-	"periodic-table/ui/table"
+	"periodic-table/ui/grid"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -15,7 +15,7 @@ const (
 )
 
 type Model struct {
-	table table.Model
+	table grid.Model
 	state int
 }
 
@@ -24,21 +24,9 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
 	var cmd tea.Cmd
-	switch m.state {
-	case tableView:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			if msg.String() == "enter" {
-				m.state = elementView
-			}
-		}
-		m.table, cmd = m.table.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
-	return m, tea.Batch(cmds...)
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
 }
 
 func elementInfoView(elem element.Data) string {
@@ -69,6 +57,6 @@ func (m Model) View() string {
 func CreateModel() (tea.Model, error) {
 	elements := elements.ReadElements()
 
-	table, err := table.CreateModel(elements, table.GridSettings{Rows: 10, Columns: 18})
+	table, err := grid.CreateModel(elements, grid.GridSettings{Rows: 10, Columns: 18})
 	return Model{table: table}, err
 }

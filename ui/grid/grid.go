@@ -1,17 +1,25 @@
-package table
+package grid
 
 import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"golang.org/x/exp/slices"
+	"strings"
+)
+
+const (
+	gridMode = iota
+	searchMode
 )
 
 var (
 	noElementsError                 = fmt.Errorf("grid cannot be empty")
 	elementsDoNotFitBoundariesError = fmt.Errorf("number of cells does not fit grid size")
-	helpHeight                      = 5
+	bottomBarHeight                 = 5
 )
 
 type GridSettings struct {
@@ -20,68 +28,101 @@ type GridSettings struct {
 }
 
 type Model struct {
-	cells                []Cell
-	grid                 [][]*Cell
-	selectedX, selectedY int
-	viewport             viewport.Model
-	help                 help.Model
+	cells                    []Cell
+	grid                     [][]*Cell
+	selectedX, selectedY     int
+	viewport                 viewport.Model
+	search                   textinput.Model
+	help                     help.Model
+	state                    int
+	maxHeight                int
+	highPerformanceRendering bool
 }
 
-func (m *Model) SelectCell(move string) {
+func getDirectionFromKey(directionKey string) (direction string) {
+	switch directionKey {
+	case "h":
+		direction = "left"
+	case "j":
+		direction = "down"
+	case "k":
+		direction = "up"
+	case "l":
+		direction = "right"
+	default:
+		direction = directionKey
+	}
+
+	return direction
+}
+
+func (m *Model) SelectCell(directionKey string) {
 	(*m.grid[m.selectedY][m.selectedX]).SetSelected(false)
-	m.selectedX, m.selectedY = m.getNextNonHiddenCell(move)
+	direction := getDirectionFromKey(directionKey)
+	m.selectedX, m.selectedY = m.getNextNonHiddenCell(direction)
+	(*m.grid[m.selectedY][m.selectedX]).SetSelected(true)
+}
+
+func (m *Model) setSelectedCell(idx int) {
+	y := idx / len(m.grid[0])
+	x := idx - y*len(m.grid[0])
+
+	(*m.grid[m.selectedY][m.selectedX]).SetSelected(false)
+	m.selectedX, m.selectedY = x, y
 	(*m.grid[m.selectedY][m.selectedX]).SetSelected(true)
 }
 
 func (m *Model) getNextNonHiddenCell(direction string) (int, int) {
-	coordNum := m.selectedX
+	planeValue := m.selectedX
+	planeValueModifier := func() { planeValue++ }
+
+	if direction == "up" || direction == "left" {
+		planeValueModifier = func() { planeValue-- }
+	}
+
 	if direction == "up" || direction == "down" {
-		coordNum = m.selectedY
+		planeValue = m.selectedY
 	}
 
 	rows := len(m.grid)
 	cols := len(m.grid[0])
 
 	for {
-		if direction == "up" || direction == "left" {
-			coordNum--
-		} else {
-			coordNum++
-		}
+		planeValueModifier()
 
 		var cell *Cell
 		switch direction {
 		case "up":
-			if coordNum < 0 {
+			if planeValue < 0 {
 				return m.selectedX, m.selectedY
 			}
-			cell = m.grid[coordNum][m.selectedX]
+			cell = m.grid[planeValue][m.selectedX]
 			if cell != nil && !(*cell).IsPaddingCell() {
-				return m.selectedX, coordNum
+				return m.selectedX, planeValue
 			}
 		case "down":
-			if coordNum >= rows {
+			if planeValue >= rows {
 				return m.selectedX, m.selectedY
 			}
-			cell = m.grid[coordNum][m.selectedX]
+			cell = m.grid[planeValue][m.selectedX]
 			if cell != nil && !(*cell).IsPaddingCell() {
-				return m.selectedX, coordNum
+				return m.selectedX, planeValue
 			}
 		case "right":
-			if coordNum >= cols {
+			if planeValue >= cols {
 				return m.selectedX, m.selectedY
 			}
-			cell = m.grid[m.selectedY][coordNum]
+			cell = m.grid[m.selectedY][planeValue]
 			if cell != nil && !(*cell).IsPaddingCell() {
-				return coordNum, m.selectedY
+				return planeValue, m.selectedY
 			}
 		case "left":
-			if coordNum < 0 {
+			if planeValue < 0 {
 				return m.selectedX, m.selectedY
 			}
-			cell = m.grid[m.selectedY][coordNum]
+			cell = m.grid[m.selectedY][planeValue]
 			if cell != nil && !(*cell).IsPaddingCell() {
-				return coordNum, m.selectedY
+				return planeValue, m.selectedY
 			}
 		}
 	}
@@ -103,6 +144,7 @@ func (m *Model) SetGrid(settings GridSettings) error {
 }
 
 func fillGrid(elements []Cell, settings GridSettings) (grid [][]*Cell) {
+
 	for i := 0; i < settings.Rows; i++ {
 		if i == 0 {
 			elements[0].SetSelected(true)
@@ -172,16 +214,38 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
-		if key == "q" {
-			return m, tea.Quit
-		}
-		if key == "up" || key == "down" || key == "left" || key == "right" {
-			m.SelectCell(key)
+		if m.state == gridMode {
+			switch key {
+			case "up", "down", "left", "right", "h", "j", "k", "l":
+				m.SelectCell(key)
+			case "/":
+				m.state = searchMode
+				m.search.Focus()
+			case "q":
+				return m, tea.Quit
+			}
+		} else {
+			if key == "esc" || key == "enter" {
+				m.state = gridMode
+				m.search.Reset()
+			} else {
+				m.search, cmd = m.search.Update(msg)
+				if value := m.search.Value(); value != "" {
+					m.SearchCells(value)
+				}
+				cmds = append(cmds, cmd)
+			}
 		}
 		m.viewport.SetContent(m.viewGrid())
 	case tea.WindowSizeMsg:
-		m.viewport = viewport.New(msg.Width-helpHeight, msg.Height)
-		m.viewport.HighPerformanceRendering = false
+		maxHeight := len(m.grid) * (m.cells[0].GetUnselectedStyle().GetVerticalFrameSize() + m.cells[0].GetUnselectedStyle().GetHeight() + 1)
+		fmt.Print()
+		if msg.Height > maxHeight {
+			m.viewport = viewport.New(msg.Width, maxHeight)
+		} else {
+			m.viewport = viewport.New(msg.Width, msg.Height-bottomBarHeight)
+		}
+		m.viewport.HighPerformanceRendering = m.highPerformanceRendering
 		m.viewport.SetContent(m.viewGrid())
 	}
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -204,14 +268,39 @@ func (m *Model) viewGrid() string {
 }
 
 func (m Model) View() string {
-	return m.viewport.View()
+	text := m.viewport.View()
+	if m.state == searchMode {
+		text = lipgloss.JoinVertical(0, text, m.search.View())
+	}
+
+	return text
+}
+
+func (m *Model) SearchCells(searchText string) {
+	searchText = strings.ToLower(searchText)
+	idx := slices.IndexFunc(m.cells, func(c Cell) bool {
+		cellString := strings.ToLower(c.GetSearchString())
+		if len(cellString) < len(searchText) {
+			return false
+		}
+		return cellString[:len(searchText)] == searchText
+	})
+	if idx != -1 {
+		m.setSelectedCell(idx)
+	}
 }
 
 func CreateModel(cells []Cell, gridSettings GridSettings) (Model, error) {
+	search := textinput.New()
+	search.Prompt = "/"
+
 	model := Model{
-		cells: cells,
-		help:  help.New(),
+		cells:                    cells,
+		help:                     help.New(),
+		search:                   search,
+		highPerformanceRendering: false,
 	}
 	err := model.SetGrid(gridSettings)
+
 	return model, err
 }

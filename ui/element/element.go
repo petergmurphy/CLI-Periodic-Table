@@ -2,7 +2,7 @@ package element
 
 import (
 	"fmt"
-	"periodic-table/ui/table"
+	"periodic-table/ui/grid"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -87,6 +87,14 @@ func (c *Cell) GetView() string {
 	return text
 }
 
+func (c *Cell) GetUnselectedStyle() lipgloss.Style {
+	return c.unSelectedStyle
+}
+
+func (c *Cell) GetSelectedStyle() lipgloss.Style {
+	return c.selectedStyle
+}
+
 func (c *Cell) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
 	c.selectedStyle = selectedStyle
 	c.unSelectedStyle = unSelectedStyle
@@ -106,7 +114,7 @@ func (c *Cell) IsPaddingCell() bool {
 	return c.isPaddingCell
 }
 
-func CreateElement(data Data, isPaddingCell bool) table.Cell {
+func CreateElement(data Data, isPaddingCell bool) grid.Cell {
 	unSelectedStyle := style.Copy().BorderForeground(TypeColors[data.Type])
 	selectedStyle := unSelectedStyle.Copy().Background(TypeColors[data.Type])
 
