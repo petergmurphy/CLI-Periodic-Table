@@ -2,24 +2,16 @@ package grid
 
 import (
 	"fmt"
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/exp/slices"
 	"strings"
 )
 
-const (
-	gridMode = iota
-	searchMode
-)
-
 var (
 	noElementsError                 = fmt.Errorf("grid cannot be empty")
 	elementsDoNotFitBoundariesError = fmt.Errorf("number of cells does not fit grid size")
-	bottomBarHeight                 = 5
 )
 
 type GridSettings struct {
@@ -28,15 +20,11 @@ type GridSettings struct {
 }
 
 type Model struct {
-	cells                    []Cell
-	grid                     [][]*Cell
-	selectedX, selectedY     int
-	viewport                 viewport.Model
-	search                   textinput.Model
-	help                     help.Model
-	state                    int
-	maxHeight                int
-	highPerformanceRendering bool
+	cells                []Cell
+	selectedCell         Cell
+	grid                 [][]*Cell
+	selectedX, selectedY int
+	maxHeight            int
 }
 
 func getDirectionFromKey(directionKey string) (direction string) {
@@ -183,7 +171,7 @@ func allocateColumnsAndRows(count int, settings *GridSettings) error {
 	return nil
 }
 
-func (m *Model) GetSelectedElement() *Cell {
+func (m *Model) GetActiveCell() *Cell {
 	if m.grid == nil {
 		return nil
 	}
@@ -214,47 +202,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
-		if m.state == gridMode {
-			switch key {
-			case "up", "down", "left", "right", "h", "j", "k", "l":
-				m.SelectCell(key)
-			case "/":
-				m.state = searchMode
-				m.search.Focus()
-			case "q":
-				return m, tea.Quit
-			}
-		} else {
-			if key == "esc" || key == "enter" {
-				m.state = gridMode
-				m.search.Reset()
-			} else {
-				m.search, cmd = m.search.Update(msg)
-				if value := m.search.Value(); value != "" {
-					m.SearchCells(value)
-				}
-				cmds = append(cmds, cmd)
-			}
+		switch key {
+		case "up", "down", "left", "right", "h", "j", "k", "l":
+			m.SelectCell(key)
 		}
-		m.viewport.SetContent(m.viewGrid())
-	case tea.WindowSizeMsg:
-		maxHeight := len(m.grid) * (m.cells[0].GetUnselectedStyle().GetVerticalFrameSize() + m.cells[0].GetUnselectedStyle().GetHeight() + 1)
-		fmt.Print()
-		if msg.Height > maxHeight {
-			m.viewport = viewport.New(msg.Width, maxHeight)
-		} else {
-			m.viewport = viewport.New(msg.Width, msg.Height-bottomBarHeight)
-		}
-		m.viewport.HighPerformanceRendering = m.highPerformanceRendering
-		m.viewport.SetContent(m.viewGrid())
 	}
-	m.viewport, cmd = m.viewport.Update(msg)
+
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m *Model) viewGrid() string {
+func (m *Model) View() string {
 	var text string
 	for _, row := range m.grid {
 		var rowString string
@@ -267,13 +226,12 @@ func (m *Model) viewGrid() string {
 	return text
 }
 
-func (m Model) View() string {
-	text := m.viewport.View()
-	if m.state == searchMode {
-		text = lipgloss.JoinVertical(0, text, m.search.View())
+func (m *Model) GetHeight() int {
+	if m.grid == nil {
+		return 0
 	}
 
-	return text
+	return len(m.grid) * (m.cells[0].GetUnselectedStyle().GetVerticalFrameSize() + m.cells[0].GetUnselectedStyle().GetHeight() + 1)
 }
 
 func (m *Model) SearchCells(searchText string) {
@@ -292,13 +250,10 @@ func (m *Model) SearchCells(searchText string) {
 
 func CreateModel(cells []Cell, gridSettings GridSettings) (Model, error) {
 	search := textinput.New()
-	search.Prompt = "/"
+	search.Prompt = "Search: "
 
 	model := Model{
-		cells:                    cells,
-		help:                     help.New(),
-		search:                   search,
-		highPerformanceRendering: false,
+		cells: cells,
 	}
 	err := model.SetGrid(gridSettings)
 

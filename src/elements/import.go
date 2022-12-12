@@ -4,8 +4,8 @@ import (
 	"encoding/csv"
 	"log"
 	"os"
-	"periodic-table/ui/element"
 	"periodic-table/ui/grid"
+	"periodic-table/ui/periodic_table/element"
 )
 
 var (
