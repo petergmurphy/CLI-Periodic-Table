@@ -2,11 +2,9 @@ package ui
 
 import (
 	"periodic-table/src/elements"
-	"periodic-table/ui/element"
-	"periodic-table/ui/grid"
+	"periodic-table/ui/periodic_table/table"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -15,7 +13,7 @@ const (
 )
 
 type Model struct {
-	table grid.Model
+	table tea.Model
 	state int
 }
 
@@ -29,34 +27,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func elementInfoView(elem element.Data) string {
-	heading := lipgloss.Place(10, 5, 1, 1, elem.Symbol)
-	heading = lipgloss.JoinVertical(0, heading, lipgloss.Place(20, 5, 0.5, 0, elem.Element))
-
-	body := elem.GetDataAsString()
-	body = lipgloss.Place(10, 10, 0, 0, body)
-
-	text := lipgloss.JoinVertical(0, heading, body)
-	style = style.BorderForeground(element.TypeColors[elem.Type])
-
-	return style.Render(text)
-}
-
 func (m Model) View() string {
-	text := m.table.View()
-
-	switch elementData := (*m.table.GetSelectedElement()).GetData().(type) {
-	case element.Data:
-		elementText := elementInfoView(elementData)
-		text = lipgloss.JoinHorizontal(0, text, elementText)
-	}
-
-	return text
+	return m.table.View()
 }
 
 func CreateModel() (tea.Model, error) {
-	elements := elements.ReadElements()
+	elmts := elements.ReadElements()
 
-	table, err := grid.CreateModel(elements, grid.GridSettings{Rows: 10, Columns: 18})
-	return Model{table: table}, err
+	t, err := table.CreateModel(elmts)
+	return Model{table: t}, err
 }

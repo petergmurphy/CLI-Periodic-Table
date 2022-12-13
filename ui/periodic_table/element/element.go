@@ -56,7 +56,7 @@ Specific Heat: %s
 
 }
 
-type Cell struct {
+type Element struct {
 	data            Data
 	selectedStyle   lipgloss.Style
 	unSelectedStyle lipgloss.Style
@@ -65,15 +65,15 @@ type Cell struct {
 	isPaddingCell   bool
 }
 
-func (c *Cell) GetSearchString() string {
+func (c *Element) GetSearchString() string {
 	return c.searchString
 }
 
-func (c *Cell) GetData() interface{} {
+func (c *Element) GetData() interface{} {
 	return c.data
 }
 
-func (c *Cell) GetView() string {
+func (c *Element) GetView() string {
 	var text string
 	// Make cell text here
 	text = styleText(c.data.AtomicNumber, c.data.Symbol)
@@ -87,20 +87,20 @@ func (c *Cell) GetView() string {
 	return text
 }
 
-func (c *Cell) GetUnselectedStyle() lipgloss.Style {
+func (c *Element) GetUnselectedStyle() lipgloss.Style {
 	return c.unSelectedStyle
 }
 
-func (c *Cell) GetSelectedStyle() lipgloss.Style {
+func (c *Element) GetSelectedStyle() lipgloss.Style {
 	return c.selectedStyle
 }
 
-func (c *Cell) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
+func (c *Element) SetStyle(selectedStyle lipgloss.Style, unSelectedStyle lipgloss.Style) {
 	c.selectedStyle = selectedStyle
 	c.unSelectedStyle = unSelectedStyle
 }
 
-func (c *Cell) SetSelected(isSelected bool) {
+func (c *Element) SetSelected(isSelected bool) {
 	c.isSelected = isSelected
 }
 
@@ -110,15 +110,28 @@ func styleText(atomicNumber string, symbol string) string {
 	return text
 }
 
-func (c *Cell) IsPaddingCell() bool {
+func (c *Element) IsPaddingCell() bool {
 	return c.isPaddingCell
+}
+
+func ElementInfoView(elmt Data) string {
+	heading := lipgloss.Place(11, 5, 1, 1, elmt.Symbol)
+	heading = lipgloss.JoinVertical(0, heading, lipgloss.Place(20, 5, 0.5, 0, elmt.Element))
+
+	body := elmt.GetDataAsString()
+	body = lipgloss.Place(11, 10, 0, 0, body)
+
+	text := lipgloss.JoinVertical(0, heading, body)
+	style = style.BorderForeground(TypeColors[elmt.Type]).Width(22)
+
+	return style.Render(text)
 }
 
 func CreateElement(data Data, isPaddingCell bool) grid.Cell {
 	unSelectedStyle := style.Copy().BorderForeground(TypeColors[data.Type])
 	selectedStyle := unSelectedStyle.Copy().Background(TypeColors[data.Type])
 
-	cell := &Cell{
+	cell := &Element{
 		data:            data,
 		selectedStyle:   selectedStyle,
 		unSelectedStyle: unSelectedStyle,
